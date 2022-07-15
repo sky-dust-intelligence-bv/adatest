@@ -31,9 +31,9 @@ module.exports = {
     // 'react-dom': 'ReactDOM'
   },
   output: {
-    path: path.resolve(__dirname, './dist'),
+    path: path.resolve(__dirname, '../adatest/resources'),
     filename: 'main.js',
   },
   mode: "production"
-  //mode: "development"
+  // mode: "development"
 };

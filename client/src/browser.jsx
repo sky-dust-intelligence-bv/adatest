@@ -28,6 +28,7 @@ export default class Browser extends React.Component {
       suggestionsDropHighlighted: 0,
       score_filter: 0.3,
       do_score_filter: true,
+      filter_text: "",
       experiment_pos: 0,
       timerExpired: false,
       experiment_locations: [],
@@ -112,11 +113,22 @@ export default class Browser extends React.Component {
       // text2 is the part of the test shown in the select, +7 is for spaces on either side
       selectWidths[type] = this.calculateTextWidth(this.state.test_type_parts[type].text2); 
     }
-    let maxSelectWidth = Math.max(
-      ...this.state.suggestions.map(id => this.comm.data[id] ? get(selectWidths, this.comm.data[id].type, 40) : 40),
-      ...this.state.tests.map(id => this.comm.data[id] ? get(selectWidths, this.comm.data[id].type, 40) : 40)
+    // let maxInputLength = Math.max(
+    //   ...this.state.suggestions.map(id => this.comm.data[id] ? this.comm.data[id].input.length : 1),
+    //   ...this.state.tests.map(id => this.comm.data[id] ? this.comm.data[id].input.length : 1)
+    // );
+    let maxOutputLength = Math.max(
+      ...this.state.suggestions.map(id => this.comm.data[id] && this.comm.data[id].output ? this.comm.data[id].output.length : 1),
+      ...this.state.tests.map(id => this.comm.data[id] && this.comm.data[id].output ? this.comm.data[id].output.length : 1)
     );
-    // console.log("maxSelectWidth", maxSelectWidth)
+    let outputColumnWidth = "45%";
+    if (maxOutputLength < 25) {
+      outputColumnWidth = "150px";
+    } else if (maxOutputLength < 40) {
+      outputColumnWidth = "250px";
+    }
+
+    let maxSelectWidth = 40;
 
     const inFillin = this.state.topic.startsWith("/Fill-ins");
 
@@ -153,7 +165,7 @@ export default class Browser extends React.Component {
       <div style={{float: "right", marginRight: "10px", padding: "8px 10px 7px 14px", width: "250px", border: "1px solid rgb(208, 215, 222)", display: "inline-block", borderRadius: "7px", marginTop: "16px", background: "rgb(246, 248, 250)"}}>
         <div style={{opacity: "0.6", width: "15px", height: "15px", display: "inline-block", paddingLeft: "1px", marginRight: "10px"}}><FontAwesomeIcon icon={faFilter} style={{fontSize: "13px", color: "#000000", display: "inline-block"}} /></div>
         <span style={{opacity: "0.6", fontSize: "13px", fontWeight: "normal"}}>
-          <ContentEditable defaultText="filter tests" text={this.state.value2Filter} onInput={this.inputValue2Filter} />
+          <ContentEditable defaultText="filter tests" text={this.state.filter_text} onFinish={this.inputFilterText} />
         </span>
       </div>
       
@@ -168,6 +180,7 @@ export default class Browser extends React.Component {
           <span style={{fontSize: "16px"}}>
           {breadCrumbParts.map((name, index) => {
             //console.log("bread crum", name, index);
+            // name = decodeURIComponent(name);
             const out = <span key={index} style={{color: index === breadCrumbParts.length - 1 ? "black" : "rgb(9, 105, 218)" }}>
               {index > 0 && <span style={{color: "black"}}> / </span>}
               <BreadCrum topic={topicPath} name={name} onDrop={this.onDrop} onClick={this.setLocation} />
@@ -222,6 +235,7 @@ export default class Browser extends React.Component {
                   test_types={this.state.test_types}
                   test_type_parts={this.state.test_type_parts}
                   user={this.state.user}
+                  outputColumnWidth={outputColumnWidth}
                 />
               </React.Fragment>
             })}
@@ -243,19 +257,23 @@ export default class Browser extends React.Component {
             {!this.state.disable_suggestions && 
               <div onClick={this.refreshSuggestions} style={{opacity: this.state.tests.length >= 0 ? "0.6" : "0.2", cursor: this.state.tests.length >= 0 ? "pointer" : "default", display: "inline-block", padding: "2px", paddingLeft: "15px", paddingRight: "15px", marginBottom: "5px", background: "rgba(221, 221, 221, 0)", borderRadius: "7px"}}>
                 <div style={{width: "15px", display: "inline-block"}}><FontAwesomeIcon className={this.state.loading_suggestions ? "fa-spin" : ""} icon={faRedo} style={{fontSize: "13px", color: "#000000", display: "inline-block"}} /></div>
-                <span style={{fontSize: "13px", fontWeight: "bold"}}>&nbsp;&nbsp;Suggestions</span>
+                <span style={{fontSize: "13px", fontWeight: "bold"}}>&nbsp;&nbsp;Suggest&nbsp;<select dir="ltr" title="Current suggestion mode" className="adatest-plain-select" onClick={e => e.stopPropagation()} value={this.state.mode} onChange={this.changeMode} style={{fontWeight: "bold", color: "rgb(0, 0, 0)", marginTop: "1px"}}>
+                  {(this.state.mode_options || []).map((mode_option) => {
+                    return <option key={mode_option}>{mode_option}</option>
+                  })}
+                </select></span>
                 {this.state.generator_options && this.state.generator_options.length > 1 &&
-                <select dir="rtl" title="Current suggestion engine" className="adatest-plain-select" onClick={e => e.stopPropagation()} value={this.state.active_generator} onChange={this.changeGenerator} style={{position: "absolute", color: "rgb(170, 170, 170)", marginTop: "1px", right: "50px"}}>
+                <select dir="rtl" title="Current suggestion engine" className="adatest-plain-select" onClick={e => e.stopPropagation()} value={this.state.active_generator} onChange={this.changeGenerator} style={{position: "absolute", color: "rgb(170, 170, 170)", marginTop: "1px", right: "13px"}}>
                   {this.state.generator_options.map((generator_option) => {
                     return <option>{generator_option}</option>
                   })}
                 </select>
                 }
-                <select dir="rtl" title="Current suggestion mode" className="adatest-plain-select" onClick={e => e.stopPropagation()} value={this.state.mode} onChange={this.changeMode} style={{position: "absolute", color: "rgb(140, 140, 140)", marginTop: "1px", right: "13px"}}>
+                {/* <select dir="rtl" title="Current suggestion mode" className="adatest-plain-select" onClick={e => e.stopPropagation()} value={this.state.mode} onChange={this.changeMode} style={{position: "absolute", color: "rgb(140, 140, 140)", marginTop: "1px", right: "13px"}}>
                   {(this.state.mode_options || []).map((mode_option) => {
                     return <option key={mode_option}>{mode_option}</option>
                   })}
-                </select>
+                </select> */}
               </div>
             }
             {this.state.suggestions_error && 
@@ -271,7 +289,26 @@ export default class Browser extends React.Component {
           </div>
         </div>}
 
-        
+        <div style={{textAlign: "right", paddingRight: "12px", marginTop: "5px", marginBottom: "-5px", color: "#666666"}}>
+          <div style={{width: "200px", textAlign: "right", display: "inline-block"}}>
+            Input
+          </div>
+          <div style={{width: "25px", textAlign: "left", display: "inline-block"}}>
+            
+          </div>
+          <div style={{width: outputColumnWidth, textAlign: "left", display: "inline-block"}}>
+            Output
+          </div>
+          <div style={{width: "50px", textAlign: "center", display: "inline-block", marginRight: "0px"}}>
+            <nobr>Off-topic</nobr>
+          </div>
+          <div style={{width: "50px", textAlign: "center", display: "inline-block", marginRight: "0px"}}>
+            Pass
+          </div>
+          <div style={{width: "50px", textAlign: "center", display: "inline-block", marginRight: "0px"}}>
+            Fail
+          </div>
+        </div>
         
         <div className="adatest-children-frame">
           {this.state.tests.length == 0 && <div style={{textAlign: "center", fontStyle: "italic", padding: "10px", fontSize: "14px", color: "#999999"}}>
@@ -311,6 +348,7 @@ export default class Browser extends React.Component {
                 test_types={this.state.test_types}
                 test_type_parts={this.state.test_type_parts}
                 user={this.state.user}
+                outputColumnWidth={outputColumnWidth}
               />
             </React.Fragment>
           })}
@@ -532,11 +570,11 @@ export default class Browser extends React.Component {
 
   keyDownHandler(e) {
     let newId = undefined;
-    const passKey = 90;
-    const failKey = 88;
-    const outKey = 67;
+    const passKey = 86;
+    const failKey = 66;
+    const offTopicKey = 67;
     console.log("keyCodeXX", e.keyCode);
-    if (e.keyCode == 8 || e.keyCode == 46 || e.keyCode == passKey || e.keyCode == failKey || e.keyCode == outKey) { // backspace and delete and labeling keys
+    if (e.keyCode == 8 || e.keyCode == 46 || e.keyCode == passKey || e.keyCode == failKey || e.keyCode == offTopicKey) { // backspace and delete and labeling keys
       const keys = Object.keys(this.state.selections);
       const ids = this.state.suggestions.concat(this.state.tests);
       if (keys.length > 0) {
@@ -548,7 +586,7 @@ export default class Browser extends React.Component {
           }
         }
 
-        if (e.keyCode == outKey && !in_suggestions) { // when marking for out of topic we only do this for suggestion rows
+        if (e.keyCode == offTopicKey && !in_suggestions) { // when marking for out of topic we only do this for suggestion rows
           return;
         }
 
@@ -566,7 +604,7 @@ export default class Browser extends React.Component {
               this.rows[keys[i]].labelAsFail();
             }
           }
-        } else if (e.keyCode == outKey) {
+        } else if (e.keyCode == offTopicKey) {
           const keys = Object.keys(this.state.selections);
           if (keys.length > 0) {
             for (const i in keys) {
@@ -670,9 +708,9 @@ export default class Browser extends React.Component {
     this.comm.send(this.id, {action: "add_new_test"});
   }
 
-  inputTopicDescription(text) {
-    this.setState({topic_description: text});
-  }
+  // inputTopicDescription(text) {
+  //   this.setState({topic_description: text});
+  // }
 
   finishTopicDescription(text) {
     console.log("finishTopicDescription", text)
@@ -685,25 +723,27 @@ export default class Browser extends React.Component {
     this.comm.send(this.id, {topic_description: text});
   }
 
-  inputValue2Filter(text) {
-    this.setState({value2Filter: text});
+  inputFilterText(text) {
+    console.log("inputFilterText", text)
+    this.setState({filter_text: text});
+    this.comm.send(this.id, {action: "change_filter", filter_text: text});
   }
 
-  inputSuggestionsTemplate(text) {
-    this.setState({suggestionsTemplate: text});
-  }
+  // inputSuggestionsTemplate(text) {
+  //   this.setState({suggestionsTemplate: text});
+  // }
 
-  inputValue1Filter(text) {
-    this.setState({value1Filter: text});
-  }
+  // inputValue1Filter(text) {
+  //   this.setState({value1Filter: text});
+  // }
   
-  inputComparatorFilter(text) {
-    this.setState({comparatorFilter: text});
-  }
+  // inputComparatorFilter(text) {
+  //   this.setState({comparatorFilter: text});
+  // }
 
-  inputTopicFilter(text) {
-    this.setState({topicFilter: text});
-  }
+  // inputTopicFilter(text) {
+  //   this.setState({topicFilter: text});
+  // }
 
 
 

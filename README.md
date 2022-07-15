@@ -1,5 +1,5 @@
 # AdaTest
-AdaTest uses language models against themselves to build suites of unit tests. It is an interative (and fun!) process between a user and a language model that results in a tree of unit tests specifically adapted to the model you are testing. Fixing any failed tests with fine-tuning then leads to an iterative debugging process similar to traditional software development.
+AdaTest uses language models against themselves to build suites of unit tests. It is an interative (and fun!) process between a user and a language model that results in a tree of unit tests specifically adapted to the model you are testing. Fixing any failed tests with fine-tuning then leads to an iterative debugging process similar to traditional software development. See <a href="https://aclanthology.org/2022.acl-long.230">paper</a> for details.
 
 <p align="center">
   <img src="docs/images/main_loops.png" width="400" alt="AdaTest loops" /><br/>
@@ -14,7 +14,7 @@ pip install adatest
 
 ## Sentiment analysis example
 
-AdaTest can test any NLP model you can call with a python function, here we will test a basic open source sentiment analysis model. Since AdaTest relies on a generative language model to help you create tests, you need to specify what generative model it will use, here we use GPT-3 from OpenAI or GPT-Neo locally. Tests are organized into a tree tree that follows the DataFrame API and is organized like a file system, here we create a new empty tree, but you can also start with a previous test tree that targets a similar task. The core AdaTest testing loop starts when you call the `.adapt()` method on a test tree passing the model(s) you want to test and the backend generator you want to use. The code for all this is below:
+AdaTest can test any NLP model you can call with a python function, here we will test a basic open source sentiment analysis model. Since AdaTest relies on a generative language model to help you create tests, you need to specify what generative model it will use, here we use GPT-3 from OpenAI or GPT-Neo locally. Tests are organized into a test tree that follows the DataFrame API and is organized like a file system, here we create a new empty tree, but you can also start with a previous test tree that targets a similar task. The core AdaTest testing loop starts when you call the `.adapt()` method on a test tree passing the model(s) you want to test and the backend generator you want to use. The code for all this is below:
 
 ```python
 import transformers
